@@ -24,12 +24,18 @@ class _DndExampleScreenState extends State<DndExampleScreen>
     with WidgetsBindingObserver {
   String _filterName = '';
   bool? _isNotificationPolicyAccessGranted = false;
+  bool _showDialog = false; // Flag to control dialog visibility
 
   @override
   void initState() {
     WidgetsBinding.instance!.addObserver(this);
     super.initState();
     updateUI();
+
+    // Show the dialog after a delay
+    Future.delayed(Duration(seconds: 1), () {
+      showDNDPermissionDialog();
+    });
   }
 
   @override
@@ -57,6 +63,10 @@ class _DndExampleScreenState extends State<DndExampleScreen>
         _isNotificationPolicyAccessGranted = isNotificationPolicyAccessGranted;
         _filterName = filterName;
       });
+
+      if (_isNotificationPolicyAccessGranted == false) {
+        _showDialog = true;
+      }
     }
   }
 
@@ -68,7 +78,72 @@ class _DndExampleScreenState extends State<DndExampleScreen>
       await FlutterDnd.setInterruptionFilter(filter);
       updateUI();
       showSnackBar(snackBarMessage);
+    } else {
+      setState(() {
+        _showDialog = true;
+      });
     }
+  }
+
+  void showDNDPermissionDialog() {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text(
+            'DND Permission Required',
+            style: TextStyle(color: Colors.black87),
+          ),
+          content: Text(
+            'Please grant DND permission to the app to enable the DND functionality.',
+            style: TextStyle(color: Colors.black87),
+          ),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(10.0),
+          ),
+          backgroundColor: Colors.white,
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop(); // Close the dialog manually
+                _redirectToPolicySettings(); // Redirect to DND settings
+              },
+              style: TextButton.styleFrom(
+                primary: Colors.black,
+                backgroundColor: Colors.white,
+                side: BorderSide(color: Colors.black),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(5.0),
+                ),
+              ),
+              child: Text('OK'),
+            ),
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop(); // Close the dialog without redirection
+                setState(() {
+                  _showDialog = false; // Set the flag to false on Not Now
+                });
+              },
+              style: TextButton.styleFrom(
+                primary: Colors.black87,
+                backgroundColor: Colors.white,
+                side: BorderSide(color: Colors.black),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(5.0),
+                ),
+              ),
+              child: Text('Not Now'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  void _redirectToPolicySettings() async {
+    await Future.delayed(Duration(milliseconds: 100)); // Add a small delay
+    FlutterDnd.gotoPolicySettings();
   }
 
   void showSnackBar(String message) {
@@ -84,12 +159,14 @@ class _DndExampleScreenState extends State<DndExampleScreen>
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('GSoC Project Idea - It\'s Urgent',
+        title: const Text(
+          'GSoC Project Idea - It\'s Urgent',
           style: TextStyle(
             color: Colors.white,
             fontSize: 20,
             fontWeight: FontWeight.w400,
-          ),),
+          ),
+        ),
         centerTitle: true,
         backgroundColor: Colors.black,
         actions: [
@@ -102,7 +179,8 @@ class _DndExampleScreenState extends State<DndExampleScreen>
         ],
       ),
       body: Container(
-        padding: EdgeInsets.only(top: MediaQuery.of(context).size.height * 0.2),
+        padding:
+        EdgeInsets.only(top: MediaQuery.of(context).size.height * 0.2),
         child: Padding(
           padding: const EdgeInsets.all(16.0),
           child: Column(
@@ -224,7 +302,7 @@ class _DndExampleScreenState extends State<DndExampleScreen>
                   ),
                   Text(
                     '$_filterName',
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 16,
                       color: Colors.blue,
                     ),
@@ -245,23 +323,24 @@ class _DndExampleScreenState extends State<DndExampleScreen>
                       color: Colors.blueGrey,
                     ),
                   ),
-
                   Text(
                     '${_isNotificationPolicyAccessGranted! ? 'Granted' : 'Not Granted'}',
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 16,
-                      color: Colors.blue,
+                      color: _isNotificationPolicyAccessGranted!
+                          ? Colors.green // Color for granted
+                          : Colors.red, // Color for not granted
                     ),
                   ),
                 ],
               ),
-
               SizedBox(height: 20),
               Container(
                 height: 2,
                 color: Colors.black,
                 margin: EdgeInsets.symmetric(horizontal: 16),
-              ),              Spacer(),
+              ),
+              Spacer(),
               const Padding(
                 padding: EdgeInsets.only(bottom: 16.0),
                 child: Text(
